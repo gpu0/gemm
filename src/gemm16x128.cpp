@@ -11,7 +11,7 @@
 #define C_X B_X
 #define C_Y A_Y
 
-template<typename T, typename T2>
+template<typename T, typename T2, typename T4>
 __global__ void Gemm128x128(T *A, T *B, T* C) {
     int tx = hipThreadIdx_x;
 
@@ -22,7 +22,23 @@ __global__ void Gemm128x128(T *A, T *B, T* C) {
     int ldsStoreBtx = (tx%8)*128 + tx/8;
 
     for(int i=0;i<(128*8)/256;i++) {
-        sB[ldsStoreBtx] = B[gmLoadBtx];
+        sB[ldsStoreBtx + i*256 ] = B[gmLoadBtx + i*256];
+    }
+
+    int gmLoadAtx = tx;
+    int ldsStoreAtx = tx;
+
+    for(int i=0;i<(128*8)/256;i++) {
+        sA[gmLoadAtx + i*256] = A[gmLoadAtx + i*256];
+    }
+
+    T rA[8*8];
+    T rB[8*8];
+    T rC[8*8];
+
+    for(int i=0;i<8*8;i++) {
+        rA[i] = sA[i+tx*64];
+        rB[i] = sB[i+tx*64];
     }
 
 }
