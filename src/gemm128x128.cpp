@@ -2,7 +2,6 @@
 #include<hip/hip_runtime.h>
 #include<hip/hip_runtime_api.h>
 
-
 #define TID_X 256
 #define TID_Y 1
 
@@ -35,13 +34,13 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
 
     sBx4[ldsStoreBtx] = B[gmLoadBtx];
 
-    float4 a0, a1, b0, b1, c[8][2];
+    float4 a0, a1, b0, b1, c0, c1;//[8][2];
     a0 = sAx4[tx%16];
     a1 = sAx4[tx%16+16];
 
     b0 = sBx4[tx%16];
     b1 = sBx4[tx%16+16];
-
+/*
     c[0][0].x = a0.x * b0.x;
     c[0][0].y = a0.x * b0.y;
     c[0][0].z = a0.x * b0.z;
@@ -92,25 +91,25 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     c[4][1].z = a1.x * b1.z;
     c[4][1].w = a1.x * b1.w;
 
-  c[5][0].x = a0.y * b1.x;
-  c[5][0].y = a0.y * b1.y;
-  c[5][0].z = a0.y * b1.z;
-  c[5][0].w = a0.y * b1.w;
+    c[5][0].x = a0.y * b1.x;
+    c[5][0].y = a0.y * b1.y;
+    c[5][0].z = a0.y * b1.z;
+    c[5][0].w = a0.y * b1.w;
 
-  c[5][1].x = a1.y * b1.x;
-  c[5][1].y = a1.y * b1.y;
-  c[5][1].z = a1.y * b1.z;
-  c[5][1].w = a1.y * b1.w;
+    c[5][1].x = a1.y * b1.x;
+    c[5][1].y = a1.y * b1.y;
+    c[5][1].z = a1.y * b1.z;
+    c[5][1].w = a1.y * b1.w;
 
-  c[6][0].x = a0.z * b1.x;
-  c[6][0].y = a0.z * b1.y;
-  c[6][0].z = a0.z * b1.z;
-  c[6][0].w = a0.z * b1.w;
+    c[6][0].x = a0.z * b1.x;
+    c[6][0].y = a0.z * b1.y;
+    c[6][0].z = a0.z * b1.z;
+    c[6][0].w = a0.z * b1.w;
 
-  c[6][1].x = a1.z * b1.x;
-  c[6][1].y = a1.z * b1.y;
-  c[6][1].z = a1.z * b1.z;
-  c[6][1].w = a1.z * b1.w;
+    c[6][1].x = a1.z * b1.x;
+    c[6][1].y = a1.z * b1.y;
+    c[6][1].z = a1.z * b1.z;
+    c[6][1].w = a1.z * b1.w;
 
     c[7][0].x = a0.w * b1.x;
     c[7][0].y = a0.w * b1.y;
@@ -121,25 +120,28 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     c[7][1].y = a1.w * b1.y;
     c[7][1].z = a1.w * b1.z;
     c[7][1].w = a1.w * b1.w;
-
+*/
+    c0 = a0 + b0;
+    c1 = a1 + b1;
 
     int gmStoreCtx = (tx%16)*2 + (tx/16)*8*128;
-    C[gmStoreCtx + 0*32 + 0] = c[0][0];
-    C[gmStoreCtx + 0*32 + 1] = c[0][1];
-    C[gmStoreCtx + 1*32 + 0] = c[1][0];
-    C[gmStoreCtx + 1*32 + 1] = c[1][1];
-    C[gmStoreCtx + 2*32 + 0] = c[2][0];
-    C[gmStoreCtx + 2*32 + 1] = c[2][1];
-    C[gmStoreCtx + 3*32 + 0] = c[3][0];
-    C[gmStoreCtx + 3*32 + 1] = c[3][1];
-    C[gmStoreCtx + 4*32 + 0] = c[4][0];
-    C[gmStoreCtx + 4*32 + 1] = c[4][1];
-    C[gmStoreCtx + 5*32 + 0] = c[5][0];
-    C[gmStoreCtx + 5*32 + 1] = c[5][1];
-    C[gmStoreCtx + 6*32 + 0] = c[6][0];
-    C[gmStoreCtx + 6*32 + 1] = c[6][1];
-    C[gmStoreCtx + 7*32 + 0] = c[7][0];
-    C[gmStoreCtx + 7*32 + 1] = c[7][1];
+    C[gmStoreCtx + 0*32 + 0] = c0;
+/*    C[gmStoreCtx + 0*32 + 1] = c1;
+    C[gmStoreCtx + 1*32 + 0] = c0;
+    C[gmStoreCtx + 1*32 + 1] = c1;
+    C[gmStoreCtx + 2*32 + 0] = c0;
+    C[gmStoreCtx + 2*32 + 1] = c1;
+    C[gmStoreCtx + 3*32 + 0] = c0;
+    C[gmStoreCtx + 3*32 + 1] = c1;
+    C[gmStoreCtx + 4*32 + 0] = c0;
+    C[gmStoreCtx + 4*32 + 1] = c1;
+    C[gmStoreCtx + 5*32 + 0] = c0;
+    C[gmStoreCtx + 5*32 + 1] = c1;
+    C[gmStoreCtx + 6*32 + 0] = c0;
+    C[gmStoreCtx + 6*32 + 1] = c1;
+    C[gmStoreCtx + 7*32 + 0] = c0;
+    C[gmStoreCtx + 7*32 + 1] = c1;
+*/
 }
 
 int main(){
