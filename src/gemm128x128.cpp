@@ -42,55 +42,55 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     b0 = sBx4[tx%16];
     b1 = sBx4[tx%16+16];
 
-  c[0][0].x = a0.x * b0.x;
-  c[0][0].y = a0.x * b0.y;
-  c[0][0].z = a0.x * b0.z;
-  c[0][0].w = a0.x * b0.w;
+    c[0][0].x = a0.x * b0.x;
+    c[0][0].y = a0.x * b0.y;
+    c[0][0].z = a0.x * b0.z;
+    c[0][0].w = a0.x * b0.w;
 
-  c[0][1].x = a1.x * b0.x;
-  c[0][1].y = a1.x * b0.y;
-  c[0][1].z = a1.x * b0.z;
-  c[0][1].w = a1.x * b0.w;
+    c[0][1].x = a1.x * b0.x;
+    c[0][1].y = a1.x * b0.y;
+    c[0][1].z = a1.x * b0.z;
+    c[0][1].w = a1.x * b0.w;
 
-  c[1][0].x = a0.y * b0.x;
-  c[1][0].y = a0.y * b0.y;
-  c[1][0].z = a0.y * b0.z;
-  c[1][0].w = a0.y * b0.w;
+    c[1][0].x = a0.y * b0.x;
+    c[1][0].y = a0.y * b0.y;
+    c[1][0].z = a0.y * b0.z;
+    c[1][0].w = a0.y * b0.w;
 
-  c[1][1].x = a1.y * b0.x;
-  c[1][1].y = a1.y * b0.y;
-  c[1][1].z = a1.y * b0.z;
-  c[1][1].w = a1.y * b0.w;
+    c[1][1].x = a1.y * b0.x;
+    c[1][1].y = a1.y * b0.y;
+    c[1][1].z = a1.y * b0.z;
+    c[1][1].w = a1.y * b0.w;
 
-  c[2][0].x = a0.z * b0.x;
-  c[2][0].y = a0.z * b0.y;
-  c[2][0].z = a0.z * b0.z;
-  c[2][0].w = a0.z * b0.w;
+    c[2][0].x = a0.z * b0.x;
+    c[2][0].y = a0.z * b0.y;
+    c[2][0].z = a0.z * b0.z;
+    c[2][0].w = a0.z * b0.w;
 
-  c[2][1].x = a1.z * b0.x;
-  c[2][1].y = a1.z * b0.y;
-  c[2][1].z = a1.z * b0.z;
-  c[2][1].w = a1.z * b0.w;
+    c[2][1].x = a1.z * b0.x;
+    c[2][1].y = a1.z * b0.y;
+    c[2][1].z = a1.z * b0.z;
+    c[2][1].w = a1.z * b0.w;
 
-  c[3][0].x = a0.w * b0.x;
-  c[3][0].y = a0.w * b0.y;
-  c[3][0].z = a0.w * b0.z;
-  c[3][0].w = a0.w * b0.w;
+    c[3][0].x = a0.w * b0.x;
+    c[3][0].y = a0.w * b0.y;
+    c[3][0].z = a0.w * b0.z;
+    c[3][0].w = a0.w * b0.w;
 
-  c[3][1].x = a1.w * b0.x;
-  c[3][1].y = a1.w * b0.y;
-  c[3][1].z = a1.w * b0.z;
-  c[3][1].w = a1.w * b0.w;
+    c[3][1].x = a1.w * b0.x;
+    c[3][1].y = a1.w * b0.y;
+    c[3][1].z = a1.w * b0.z;
+    c[3][1].w = a1.w * b0.w;
 
-  c[4][0].x = a0.x * b1.x;
-  c[4][0].y = a0.x * b1.y;
-  c[4][0].z = a0.x * b1.z;
-  c[4][0].w = a0.x * b1.w;
+    c[4][0].x = a0.x * b1.x;
+    c[4][0].y = a0.x * b1.y;
+    c[4][0].z = a0.x * b1.z;
+    c[4][0].w = a0.x * b1.w;
 
-  c[4][1].x = a1.x * b1.x;
-  c[4][1].y = a1.x * b1.y;
-  c[4][1].z = a1.x * b1.z;
-  c[4][1].w = a1.x * b1.w;
+    c[4][1].x = a1.x * b1.x;
+    c[4][1].y = a1.x * b1.y;
+    c[4][1].z = a1.x * b1.z;
+    c[4][1].w = a1.x * b1.w;
 
   c[5][0].x = a0.y * b1.x;
   c[5][0].y = a0.y * b1.y;
@@ -112,21 +112,34 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
   c[6][1].z = a1.z * b1.z;
   c[6][1].w = a1.z * b1.w;
 
-  c[7][0].x = a0.w * b1.x;
-  c[7][0].y = a0.w * b1.y;
-  c[7][0].z = a0.w * b1.z;
-  c[7][0].w = a0.w * b1.w;
+    c[7][0].x = a0.w * b1.x;
+    c[7][0].y = a0.w * b1.y;
+    c[7][0].z = a0.w * b1.z;
+    c[7][0].w = a0.w * b1.w;
 
     c[7][1].x = a1.w * b1.x;
     c[7][1].y = a1.w * b1.y;
     c[7][1].z = a1.w * b1.z;
     c[7][1].w = a1.w * b1.w;
 
+
     int gmStoreCtx = (tx%16)*2 + (tx/16)*8*128;
-    C[gmStoreCtx+0]    = c[0][0];
-    C[gmStoreCtx+1]    = c[0][1];
-    C[gmStoreCtx+32+0] = c[1][0];
-    C[gmStoreCtx+32+1] = c[1][1];
+    C[gmStoreCtx + 0*32 + 0] = c[0][0];
+    C[gmStoreCtx + 0*32 + 1] = c[0][1];
+    C[gmStoreCtx + 1*32 + 0] = c[1][0];
+    C[gmStoreCtx + 1*32 + 1] = c[1][1];
+    C[gmStoreCtx + 2*32 + 0] = c[2][0];
+    C[gmStoreCtx + 2*32 + 1] = c[2][1];
+    C[gmStoreCtx + 3*32 + 0] = c[3][0];
+    C[gmStoreCtx + 3*32 + 1] = c[3][1];
+    C[gmStoreCtx + 4*32 + 0] = c[4][0];
+    C[gmStoreCtx + 4*32 + 1] = c[4][1];
+    C[gmStoreCtx + 5*32 + 0] = c[5][0];
+    C[gmStoreCtx + 5*32 + 1] = c[5][1];
+    C[gmStoreCtx + 6*32 + 0] = c[6][0];
+    C[gmStoreCtx + 6*32 + 1] = c[6][1];
+    C[gmStoreCtx + 7*32 + 0] = c[7][0];
+    C[gmStoreCtx + 7*32 + 1] = c[7][1];
 }
 
 int main(){
@@ -146,6 +159,10 @@ int main(){
     hipMemcpy(Ad, A.data(), A.size()*sizeof(float), hipMemcpyHostToDevice);
     hipMemcpy(Bd, B.data(), B.size()*sizeof(float), hipMemcpyHostToDevice);
     hipMemcpy(Cd, C.data(), C.size()*sizeof(float), hipMemcpyHostToDevice);
+
+    std::cout<<"Range of Ad is: "<<Ad<<" "<<Ad+A.size()<<std::endl;
+    std::cout<<"Range of Bd is: "<<Bd<<" "<<Bd+B.size()<<std::endl;
+    std::cout<<"Range of Cd is: "<<Cd<<" "<<Cd+C.size()<<std::endl;
 
     hipLaunchKernelGGL((Gemm128x128), dim3(1,1,1), dim3(16*16,1), 0, 0, (float4*)Ad, (float4*)Bd, (float4*)Cd);
     hipDeviceSynchronize();
