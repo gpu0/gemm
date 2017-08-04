@@ -1,4 +1,6 @@
 #include<iostream>
+#include<fstream>
+#include<string>
 #include<hip/hip_runtime.h>
 #include<hip/hip_runtime_api.h>
 
@@ -115,62 +117,46 @@ __device__ inline void loadCtoRegs(float4* C, float4 c[], int gmStoreCtx) {
 
 __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     int tx = hipThreadIdx_x;
+
+/*
     __shared__ float4 sAx4[128*2];
     __shared__ float4 sBx4[128*2];
 
     int gmLoadAtx = tx;
     int gmLoadBtx = tx;
 
-    int sAtx = (tx%2) * 128 * 4 + tx/2;
     int ldsStoreAtx = tx;
     int ldsStoreBtx = tx;
 
-    int txby16 = tx/16;
-
-    int gmStoreCtx = (tx%16)*2 + (txby16)*16*8;
+    int gmStoreCtx = tx;
 
     float4 a0, a1, b0, b1, c[8*2];
 
     loadCtoRegs(C, c, gmStoreCtx);
 
-    float *sA = (float*)sAx4;
-    float4 a = A[gmLoadAtx];
-
-    sA[sAtx + 0 * 128] = a.x;
-    sA[sAtx + 1 * 128] = a.y;
-    sA[sAtx + 2 * 128] = a.z;
-    sA[sAtx + 3 * 128] = a.w;
-
+    sAx4[ldsStoreAtx] = A[gmLoadAtx];
     sBx4[ldsStoreBtx] = B[gmLoadBtx];
 
-    a0 = sAx4[tx%16];
-    a1 = sAx4[tx%16+16];
+    a0 = sAx4[tx];
+    a1 = a0;
 
-    b0 = sBx4[tx%16];
-    b1 = sBx4[tx%16+16];
+    b0 = sBx4[tx];
+    b1 = b0;
 
     outerProd(a0, a1, b0, b1, c);
-
+*/
     #define STRIDE 32
-
-    a0.x = gmStoreCtx;
+    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*16;
+    float4 a0 = {1, 1, 1, 1};
 
     C[gmStoreCtx + 0*STRIDE + 0] = a0;//c[0];
-    C[gmStoreCtx + 0*STRIDE + 1] = a1;//c[1];
-    C[gmStoreCtx + 1*STRIDE + 0] = a0;//c[2];
-    C[gmStoreCtx + 1*STRIDE + 1] = a1;//c[3];
-    C[gmStoreCtx + 2*STRIDE + 0] = a0;//c[4];
-    C[gmStoreCtx + 2*STRIDE + 1] = a1;//c[5];
-    C[gmStoreCtx + 3*STRIDE + 0] = a0;//c[6];
-    C[gmStoreCtx + 3*STRIDE + 1] = a1;//c[7];
-    C[gmStoreCtx + 4*STRIDE + 0] = b0;//c[8];
-    C[gmStoreCtx + 4*STRIDE + 1] = b1;//c[9];
-    C[gmStoreCtx + 5*STRIDE + 0] = b0;//c[10];
-    C[gmStoreCtx + 5*STRIDE + 1] = b1;//c[11];
-    C[gmStoreCtx + 6*STRIDE + 0] = b0;//c[12];
-    C[gmStoreCtx + 6*STRIDE + 1] = b1;//c[13];
-    C[gmStoreCtx + 7*STRIDE + 0] = b0;//c[14];
-    C[gmStoreCtx + 7*STRIDE + 1] = b1;//c[15];
+    C[gmStoreCtx + 0*STRIDE + 1] = a0;
+
+    C[gmStoreCtx + 1*STRIDE + 0] = a0;
+    C[gmStoreCtx + 1*STRIDE + 1] = a0;
+
+
+
 }
 
 int main(){
@@ -212,7 +198,15 @@ int main(){
 
     hipMemcpy(C.data(), Cd, C.size()*sizeof(float), hipMemcpyDeviceToHost);
 
-    std::cout<<C[0]<<" "<<C[8]<<" "<<C[16]<<" "<<C[24]<<" "<<C[32]<<std::endl;
+    std::fstream fs;
+    fs.open("mat.txt", std::fstream::in | std::fstream::out | std::fstream::app);
+    for(int j=0;j<C_Y;j++) {
+        fs << "j = "<<std::to_string(j)<<"\n";
+        for(int i=0;i<C_X;i++) {
+            fs << std::to_string(C[i+j*C_X]) <<" ";
+        }
+        fs <<"\n";
+    }
 
     for(int j=0;j<C_Y;j++) {
         for(int i=0;i<C_X;i++) {
