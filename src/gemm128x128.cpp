@@ -120,10 +120,7 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
 
     float4 a0, a1, b0, b1, c[8*2];
 
-    int gmStoreCtx = (tx%16)*2 + (tx/16)*128*8;
-    for(int i=0;i<8*2;i++) {
-        c[i] = 1.0f;
-    }
+    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*8;
 
     a0 = sAx4[tx%16];
     a1 = sAx4[tx%16+16];
@@ -133,26 +130,22 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
 
     outerProd(a0, a1, b0, b1, c);
 
-/*
-    C[gmStoreCtx + 0*32 + 0] = c0;
-    C[gmStoreCtx + 0*32 + 1] = c1;
-    C[gmStoreCtx + 1*32 + 0] = c0;
-    C[gmStoreCtx + 1*32 + 1] = c1;
-    C[gmStoreCtx + 2*32 + 0] = c0;
-    C[gmStoreCtx + 2*32 + 1] = c1;
-    C[gmStoreCtx + 3*32 + 0] = c0;
-    C[gmStoreCtx + 3*32 + 1] = c1;
-    C[gmStoreCtx + 4*32 + 0] = c0;
-    C[gmStoreCtx + 4*32 + 1] = c1;
-    C[gmStoreCtx + 5*32 + 0] = c0;
-    C[gmStoreCtx + 5*32 + 1] = c1;
-    C[gmStoreCtx + 6*32 + 0] = c0;
-    C[gmStoreCtx + 6*32 + 1] = c1;
-    C[gmStoreCtx + 7*32 + 0] = c0;
-    C[gmStoreCtx + 7*32 + 1] = c1;
-*/
-
-    C[gmStoreCtx] = c[0];
+    C[gmStoreCtx + 0*32 + 0] = c[0];
+    C[gmStoreCtx + 0*32 + 1] = c[1];
+    C[gmStoreCtx + 1*32 + 0] = c[2];
+    C[gmStoreCtx + 1*32 + 1] = c[3];
+    C[gmStoreCtx + 2*32 + 0] = c[4];
+    C[gmStoreCtx + 2*32 + 1] = c[5];
+    C[gmStoreCtx + 3*32 + 0] = c[6];
+    C[gmStoreCtx + 3*32 + 1] = c[7];
+    C[gmStoreCtx + 4*32 + 0] = c[8];
+    C[gmStoreCtx + 4*32 + 1] = c[9];
+    C[gmStoreCtx + 5*32 + 0] = c[10];
+    C[gmStoreCtx + 5*32 + 1] = c[11];
+    C[gmStoreCtx + 6*32 + 0] = c[12];
+    C[gmStoreCtx + 6*32 + 1] = c[13];
+    C[gmStoreCtx + 7*32 + 0] = c[14];
+    C[gmStoreCtx + 7*32 + 1] = c[15];
 }
 
 int main(){
@@ -177,7 +170,7 @@ int main(){
     std::cout<<"Range of Bd is: "<<Bd<<" "<<Bd+B.size()<<std::endl;
     std::cout<<"Range of Cd is: "<<Cd<<" "<<Cd+C.size()<<std::endl;
 
-    hipLaunchKernelGGL((Gemm128x128), dim3(1,1,1), dim3(16*16,1), 0, 0, (float4*)Ad, (float4*)Bd, (float4*)Cd);
+    hipLaunchKernelGGL((Gemm128x128), dim3(1,1,1), dim3(TID_X,TID_Y,1), 0, 0, (float4*)Ad, (float4*)Bd, (float4*)Cd);
     hipDeviceSynchronize();
 
     hipMemcpy(C.data(), Cd, C.size()*sizeof(float), hipMemcpyDeviceToHost);
