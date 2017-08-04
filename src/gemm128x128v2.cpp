@@ -14,6 +14,10 @@
 #define C_X B_X
 #define C_Y A_X
 
+#define FULL_STRIDE 128/4
+#define HALF_STRIDE FULL_STRIDE/2
+#define UNROLL_FACTOR 8
+
 __device__ inline void outerProd(float4 &a0, float4 &a1, float4 &b0, float4 &b1, float4 c[]) {
     c[0].x += a0.x * b0.x;
     c[0].y += a0.x * b0.y;
@@ -97,65 +101,93 @@ __device__ inline void outerProd(float4 &a0, float4 &a1, float4 &b0, float4 &b1,
 }
 
 __device__ inline void loadCtoRegs(float4* C, float4 c[], int gmStoreCtx) {
-    c[0]  = C[gmStoreCtx + 0*32 + 0];
-    c[1]  = C[gmStoreCtx + 0*32 + 1];
-    c[2]  = C[gmStoreCtx + 1*32 + 0];
-    c[3]  = C[gmStoreCtx + 1*32 + 1];
-    c[4]  = C[gmStoreCtx + 2*32 + 0];
-    c[5]  = C[gmStoreCtx + 2*32 + 1];
-    c[6]  = C[gmStoreCtx + 3*32 + 0];
-    c[7]  = C[gmStoreCtx + 3*32 + 1];
-    c[8]  = C[gmStoreCtx + 4*32 + 0];
-    c[9]  = C[gmStoreCtx + 4*32 + 1];
-    c[10] = C[gmStoreCtx + 5*32 + 0];
-    c[11] = C[gmStoreCtx + 5*32 + 1];
-    c[12] = C[gmStoreCtx + 6*32 + 0];
-    c[13] = C[gmStoreCtx + 6*32 + 1];
-    c[14] = C[gmStoreCtx + 7*32 + 0];
-    c[15] = C[gmStoreCtx + 7*32 + 1];
+    c[0]  = C[gmStoreCtx + 0*FULL_STRIDE + 0];
+    c[1]  = C[gmStoreCtx + 0*FULL_STRIDE + 1];
+    c[2]  = C[gmStoreCtx + 1*FULL_STRIDE + 0];
+    c[3]  = C[gmStoreCtx + 1*FULL_STRIDE + 1];
+    c[4]  = C[gmStoreCtx + 2*FULL_STRIDE + 0];
+    c[5]  = C[gmStoreCtx + 2*FULL_STRIDE + 1];
+    c[6]  = C[gmStoreCtx + 3*FULL_STRIDE + 0];
+    c[7]  = C[gmStoreCtx + 3*FULL_STRIDE + 1];
+    c[8]  = C[gmStoreCtx + 4*FULL_STRIDE + 0];
+    c[9]  = C[gmStoreCtx + 4*FULL_STRIDE + 1];
+    c[10] = C[gmStoreCtx + 5*FULL_STRIDE + 0];
+    c[11] = C[gmStoreCtx + 5*FULL_STRIDE + 1];
+    c[12] = C[gmStoreCtx + 6*FULL_STRIDE + 0];
+    c[13] = C[gmStoreCtx + 6*FULL_STRIDE + 1];
+    c[14] = C[gmStoreCtx + 7*FULL_STRIDE + 0];
+    c[15] = C[gmStoreCtx + 7*FULL_STRIDE + 1];
 }
 
 __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     int tx = hipThreadIdx_x;
 
-/*
-    __shared__ float4 sAx4[128*2];
-    __shared__ float4 sBx4[128*2];
+    __shared__ float4 sA1x4[FULL_STRIDE*UNROLL_FACTOR];
+    __shared__ float4 sB1x4[FULL_STRIDE*UNROLL_FACTOR];
+    __shared__ float4 sA2x4[FULL_STRIDE*UNROLL_FACTOR];
+    __shared__ float4 sB2x4[FULL_STRIDE*UNROLL_FACTOR];
 
     int gmLoadAtx = tx;
     int gmLoadBtx = tx;
 
+    int sAtx = (tx%2) * 128 * 4 + tx/2;
     int ldsStoreAtx = tx;
     int ldsStoreBtx = tx;
 
-    int gmStoreCtx = tx;
+    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*16;
 
-    float4 a0, a1, b0, b1, c[8*2];
+    float4 a0, a1, b0, b1, c[2*UNROLL_FACTOR];
 
     loadCtoRegs(C, c, gmStoreCtx);
 
-    sAx4[ldsStoreAtx] = A[gmLoadAtx];
-    sBx4[ldsStoreBtx] = B[gmLoadBtx];
+    float *sA = (float*)sA1x4;
+    for(int iter=0;iter < 128/8; iter++) {
+        float4 a = A[gmLoadAtx + iter * (128/4)*8];
 
-    a0 = sAx4[tx];
-    a1 = a0;
+        sA[sAtx + 0*128] = a.x;
+        sA[sAtx + 1*128] = a.y;
+        sA[sAtx + 2*128] = a.z;
+        sA[sAtx + 3*128] = a.w;
 
-    b0 = sBx4[tx];
-    b1 = b0;
+        sB1x4[ldsStoreBtx] = B[gmLoadBtx + iter * (FULL_STRIDE)*8];
 
-    outerProd(a0, a1, b0, b1, c);
-*/
+        for(int k=0;k<UNROLL_FACTOR;k++) {
+            a0 = sA1x4[tx%HALF_STRIDE + k*FULL_STRIDE];
+            a1 = sA1x4[tx%HALF_STRIDE + HALF_STRIDE + k*FULL_STRIDE];
+
+            b0 = sB1x4[tx/HALF_STRIDE + k*FULL_STRIDE];
+            b1 = sB1x4[tx/HALF_STRIDE + HALF_STRIDE + k*FULL_STRIDE];
+
+            outerProd(a0, a1, b0, b1, c);
+        }
+
+    }
+
     #define STRIDE 32
-    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*16;
-    float4 a0 = {1, 1, 1, 1};
 
-    C[gmStoreCtx + 0*STRIDE + 0] = a0;//c[0];
-    C[gmStoreCtx + 0*STRIDE + 1] = a0;
+    C[gmStoreCtx + 0*STRIDE + 0] = c[0];
+    C[gmStoreCtx + 0*STRIDE + 1] = c[1];
 
-    C[gmStoreCtx + 1*STRIDE + 0] = a0;
-    C[gmStoreCtx + 1*STRIDE + 1] = a0;
+    C[gmStoreCtx + 1*STRIDE + 0] = c[2];
+    C[gmStoreCtx + 1*STRIDE + 1] = c[3];
 
+    C[gmStoreCtx + 2*STRIDE + 0] = c[4];
+    C[gmStoreCtx + 2*STRIDE + 1] = c[5];
 
+    C[gmStoreCtx + 3*STRIDE + 0] = c[6];
+    C[gmStoreCtx + 3*STRIDE + 1] = c[7];
+
+    C[gmStoreCtx + 4*STRIDE + 0] = c[8];
+    C[gmStoreCtx + 4*STRIDE + 1] = c[9];
+
+    C[gmStoreCtx + 5*STRIDE + 0] = c[10];
+    C[gmStoreCtx + 5*STRIDE + 1] = c[11];
+
+    C[gmStoreCtx + 6*STRIDE + 0] = c[12];
+    C[gmStoreCtx + 6*STRIDE + 1] = c[13];
+
+    C[gmStoreCtx + 7*STRIDE + 0] = c[14];
+    C[gmStoreCtx + 7*STRIDE + 1] = c[15];
 
 }
 
