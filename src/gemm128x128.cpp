@@ -95,6 +95,26 @@ __device__ inline void outerProd(float4 a0, float4 a1, float4 b0, float4 b1, flo
 
 }
 
+__device__ inline void loadCtoRegs(float4* C, float4 c[], int gmStoreCtx) {
+    c[0]  = C[gmStoreCtx + 0*32 + 0];
+    c[1]  = C[gmStoreCtx + 0*32 + 1];
+    c[2]  = C[gmStoreCtx + 1*32 + 0];
+    c[3]  = C[gmStoreCtx + 1*32 + 1];
+    c[4]  = C[gmStoreCtx + 2*32 + 0];
+    c[5]  = C[gmStoreCtx + 2*32 + 1];
+    c[6]  = C[gmStoreCtx + 3*32 + 0];
+    c[7]  = C[gmStoreCtx + 3*32 + 1];
+    c[8]  = C[gmStoreCtx + 4*32 + 0];
+    c[9]  = C[gmStoreCtx + 4*32 + 1];
+    c[10] = C[gmStoreCtx + 5*32 + 0];
+    c[11] = C[gmStoreCtx + 5*32 + 1];
+    c[12] = C[gmStoreCtx + 6*32 + 0];
+    c[13] = C[gmStoreCtx + 6*32 + 1];
+    c[14] = C[gmStoreCtx + 7*32 + 0];
+    c[15] = C[gmStoreCtx + 7*32 + 1];
+
+}
+
 __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     int tx = hipThreadIdx_x;
     __shared__ float4 sAx4[128*2];
@@ -107,6 +127,12 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     int ldsStoreAtx = tx;
     int ldsStoreBtx = tx;
 
+    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*8;
+
+    float4 a0, a1, b0, b1, c[8*2];
+
+    loadCtoRegs(C, c, gmStoreCtx);
+
     float *sA = (float*)sAx4;
     float4 a = A[gmLoadAtx];
 
@@ -116,11 +142,6 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
     sA[sAtx + 3 * 128] = a.w;
 
     sBx4[ldsStoreBtx] = B[gmLoadBtx];
-
-
-    float4 a0, a1, b0, b1, c[8*2];
-
-    int gmStoreCtx = (tx%16)*2 + (tx/16)*16*8;
 
     a0 = sAx4[tx%16];
     a1 = sAx4[tx%16+16];
@@ -149,6 +170,7 @@ __global__ void Gemm128x128(float4 *A, float4 *B, float4 *C) {
 }
 
 int main(){
+    hipSetDevice(1);
     std::vector<float> A(A_X*A_Y);
     std::vector<float> B(B_X*B_Y);
     std::vector<float> C(C_X*C_Y);
@@ -170,11 +192,22 @@ int main(){
     std::cout<<"Range of Bd is: "<<Bd<<" "<<Bd+B.size()<<std::endl;
     std::cout<<"Range of Cd is: "<<Cd<<" "<<Cd+C.size()<<std::endl;
 
+    auto start = std::chrono::high_resolution_clock::now();
+
     hipLaunchKernelGGL((Gemm128x128), dim3(1,1,1), dim3(TID_X,TID_Y,1), 0, 0, (float4*)Ad, (float4*)Bd, (float4*)Cd);
     hipDeviceSynchronize();
 
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(stop - start).count();
+    double perf = (double)(C_X*C_Y*C_Y)*2/1.0E12/elapsedSec;
+    std::cout<<"TFLOPs: "<<perf<<std::endl;
+    std::cout<<"Projected TFLOPs: "<<perf*64<<std::endl;
+
     hipMemcpy(C.data(), Cd, C.size()*sizeof(float), hipMemcpyDeviceToHost);
 
-    std::cout<<C[10]<<std::endl;
+    for(int j=0;j<C_X*C_Y;j++) {
+        if(C[j] != 4) { std::cerr<<"Bad output: "<<C[j]<<" at: "<<j<<std::endl; return 0;}
+    }
 
 }
